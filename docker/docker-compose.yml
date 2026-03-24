@@ -1,0 +1,50 @@
+version: "3.9"
+
+# ================================================================
+# docker-compose.yml — AMR Stack on Raspberry Pi 5
+# รัน: docker compose up -d
+# ================================================================
+
+services:
+  amr:
+    image: amr_ros2:latest
+    build:
+      context: ..           # build จาก root repo (ไม่ใช่ ./docker/)
+      dockerfile: docker/Dockerfile
+    container_name: amr_ros2
+
+    # ---- Network: host mode สำหรับ ROS2 DDS discovery ----
+    network_mode: host
+
+    # ---- USB Devices ----
+    # (ต้องรัน setup_udev.sh ก่อนเพื่อสร้าง symlink)
+    devices:
+      - /dev/esp32:/dev/esp32    # ESP32 motor controller
+      - /dev/lidar:/dev/lidar    # YDLiDAR X3 Pro
+
+    # ---- Privileges สำหรับ USB access ----
+    privileged: false
+    group_add:
+      - dialout
+
+    # ---- Restart policy ----
+    restart: unless-stopped
+
+    # ---- Environment ----
+    environment:
+      - ROS_DOMAIN_ID=0
+      - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+
+    # ---- Volumes (optional: mount config จาก host) ----
+    volumes:
+      - ../ros2_ws/src/amr_base/config:/amr_ws/src/amr_base/config:ro
+
+    # ---- Command (default: launch file) ----
+    command: ros2 launch amr_base amr_launch.py
+
+    # ---- Logging ----
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

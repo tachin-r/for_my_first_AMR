@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+.eggs/
+
+# PlatformIO
+esp32_firmware/.pio/
+esp32_firmware/.vscode/
+
+# ROS2 build artifacts — DO NOT commit these
+ros2_ws/build/
+ros2_ws/install/
+ros2_ws/log/
+
+# YDLiDAR driver — cloned separately (not committed)
+ros2_ws/src/ydlidar_ros2_driver/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.vscode/launch.json
+*.swp
+*.swo
+
+# Logs
+*.log
+*.ros/
+
+# Secrets
+.env
+*.key

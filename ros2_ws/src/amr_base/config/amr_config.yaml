@@ -1,0 +1,32 @@
+# AMR Robot Configuration
+# แก้ไขค่าเหล่านี้ให้ตรงกับหุ่นจริง
+
+robot:
+  # Physical dimensions
+  wheel_diameter_m: 0.065      # 65 mm
+  wheelbase_m: 0.200           # 200 mm (center-to-center)
+  
+  # Encoder
+  encoder_ppr: 506             # pulses per wheel revolution (Phase A edge)
+  encoder_x2: true             # CHANGE interrupt = x2 counting (1012 counts/rev)
+
+# Serial communication
+serial:
+  esp32_port: "/dev/esp32"     # หลัง udev rule setup
+  esp32_baud: 115200
+  lidar_port: "/dev/lidar"     # หลัง udev rule setup
+  lidar_baud: 128000           # YDLiDAR X3 Pro default
+
+# ROS2 topics & frames
+ros:
+  cmd_vel_topic: "/cmd_vel"
+  odom_topic:    "/odom"
+  scan_topic:    "/scan"
+  base_frame:    "base_link"
+  odom_frame:    "odom"
+  lidar_frame:   "laser_frame"
+  
+# Maximum velocities (safety limits)
+limits:
+  max_linear_vel_mps:  0.5     # m/s
+  max_angular_vel_rps: 2.0     # rad/s
