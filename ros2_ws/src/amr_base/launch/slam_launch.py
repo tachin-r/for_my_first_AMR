@@ -8,6 +8,7 @@ slam_launch.py — SLAM Launch File
 import os
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
+from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration, Command
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
@@ -24,9 +25,13 @@ def generate_launch_description():
     lidar_port_arg = DeclareLaunchArgument(
         'lidar_port', default_value='/dev/lidar',
         description='LiDAR serial port')
+    launch_rviz_arg = DeclareLaunchArgument(
+        'launch_rviz', default_value='false',
+        description='เปิด RViz2 ไหม (false = ประหยัด CPU บน Pi5)')
 
     esp32_port = LaunchConfiguration('esp32_port')
-    lidar_port = LaunchConfiguration('lidar_port')
+    lidar_port  = LaunchConfiguration('lidar_port')
+    launch_rviz = LaunchConfiguration('launch_rviz')
 
     urdf_file = os.path.join(pkg, 'urdf', 'amr.urdf.xml')
     slam_params = os.path.join(pkg, 'config', 'slam_params.yaml')
@@ -105,18 +110,20 @@ def generate_launch_description():
         parameters=[slam_params, {'use_sim_time': False}],
     )
 
-    # ── 5. RViz2 ──────────────────────────────────────────────────
+    # ── 5. RViz2 (ปิดได้เพื่อประหยัด CPU บน Pi5) ──────────────────
     rviz = Node(
         package='rviz2',
         executable='rviz2',
         name='rviz2',
         arguments=['-d', rviz_config],
         output='screen',
+        condition=IfCondition(launch_rviz),  # launch_rviz:=true เพื่อเปิด
     )
 
     return LaunchDescription([
         esp32_port_arg,
         lidar_port_arg,
+        launch_rviz_arg,
         robot_state_publisher,
         esp32_bridge_node,
         ydlidar_node,

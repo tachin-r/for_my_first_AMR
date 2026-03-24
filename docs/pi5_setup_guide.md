@@ -191,15 +191,43 @@ ros2 run tf2_tools view_frames   # export TF graph
 
 ## Troubleshooting
 
-### USB port ไม่ถูก
+### USB port ไม่ถูก (symlink ไม่ขึ้น)
 
+> เกิดเมื่อ Pi5 มี USB path แตกต่างจาก default (`7-2.2`, `7-2.4`) ในสคริปต์
+
+**1. หา USB path จริงบน Pi5:**
 ```bash
-# ดู USB path จริงๆ
-dmesg | tail -20 | grep "ttyUSB\|cp210x"
+for f in /sys/class/tty/ttyUSB*; do
+  echo "$f → $(readlink -f $f/../../../)"
+done
+# เช่น: /sys/class/tty/ttyUSB0 → .../2-1
+#        /sys/class/tty/ttyUSB1 → .../4-1
+```
 
-# แก้ udev rule ตาม path ที่เห็น แล้ว reload
+**2. หาว่า path ไหนคือ ESP32 ไหนคือ LiDAR:**
+```bash
+# ถอด USB สาย ESP32 ออก → ดูว่า ttyUSBx ไหนหาย
+ls /dev/ttyUSB*
+# เสียบคืน แล้วถอด LiDAR → ดูอีกที
+```
+
+**3. แก้ udev rule ตรงๆ:**
+```bash
+sudo nano /etc/udev/rules.d/99-amr-usb.rules
+```
+แก้ path ให้ตรง (ตัวอย่าง Pi5: ESP32=2-1, LiDAR=4-1):
+```
+SUBSYSTEM=="tty", DEVPATH=="*2-1*", SYMLINK+="esp32", GROUP="dialout", MODE="0666"
+SUBSYSTEM=="tty", DEVPATH=="*4-1*", SYMLINK+="lidar", GROUP="dialout", MODE="0666"
+```
+
+**4. Reload แล้วตรวจสอบ:**
+```bash
 sudo udevadm control --reload-rules
 sudo udevadm trigger
+# ถอดเสียบ USB ใหม่
+ls -la /dev/esp32 /dev/lidar
+# ต้องเห็น: /dev/esp32 -> ttyUSBx และ /dev/lidar -> ttyUSBy
 ```
 
 ### LiDAR เชื่อมไม่ได้
