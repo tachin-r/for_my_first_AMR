@@ -3,6 +3,10 @@
 > **เครื่องมือ:** Raspberry Pi 5 + ESP32 + YD-LiDAR X3 Pro + L298N Motor Driver  
 > **OS:** Ubuntu 24.04 | **ROS2:** Jazzy LTS (May 2029)
 
+## 🍓 Deploy บน Pi5?
+ดู **[docs/pi5_setup_guide.md](docs/pi5_setup_guide.md)** — ทำตามทีละขั้น จาก clone → SLAM
+
+
 ---
 
 ## ⚠️ อ่านก่อน — ข้อผิดพลาดที่เจอบ่อย
@@ -67,7 +71,7 @@ for_my_first_AMR/
 > ⚠️ **ต้องทำก่อน build ros2 workspace** ไม่งั้น build ไม่ผ่าน
 
 ```bash
-git clone https://github.com/tachin/<YOUR_REPO>.git ~/amr
+git clone https://github.com/tachin-r/for_my_first_AMR.git ~/amr
 cd /tmp
 git clone --depth 1 https://github.com/YDLIDAR/YDLidar-SDK.git
 cd YDLidar-SDK && mkdir build && cd build

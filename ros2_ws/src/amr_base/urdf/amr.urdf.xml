@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<robot name="amr">
+  <!--
+    Robot Description for AMR
+    Wheel: 65mm diameter, Wheelbase: 200mm
+    LiDAR: mounted at top center, ~10cm above base
+  -->
+
+  <!-- Base link — center of robot between wheels -->
+  <link name="base_link"/>
+
+  <!-- Base footprint (projection on ground) -->
+  <link name="base_footprint"/>
+  <joint name="base_footprint_joint" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 0.05" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Laser frame — LiDAR position relative to base_link -->
+  <link name="laser_frame"/>
+  <joint name="laser_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="laser_frame"/>
+    <!--
+      ปรับค่า xyz ตาม hardware จริง:
+      x = ระยะหน้าหลัง (บวก = หน้า, ลบ = หลัง)
+      y = ระยะซ้ายขวา (บวก = ซ้าย)
+      z = ความสูง LiDAR จาก base_link
+    -->
+    <origin xyz="0.0 0.0 0.10" rpy="0 0 0"/>
+  </joint>
+
+</robot>
