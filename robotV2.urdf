@@ -131,7 +131,7 @@
     <material>Gazebo/White</material>
   </gazebo>
 
-  <link name="laser_frame">
+  <link name="lidar_link">
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
@@ -149,7 +149,7 @@
 
   <joint name="lidar_joint" type="fixed">
     <parent link="base_link"/>
-    <child link="laser_frame"/>
+    <child link="lidar_link"/>
     <origin xyz="-0.05 0 0.17" rpy="0 0 0"/>
   </joint>
 
@@ -162,7 +162,7 @@
   <gazebo reference="right_wheel">
     <material>Gazebo/Black</material>
   </gazebo>
-  <gazebo reference="laser_frame">
+  <gazebo reference="lidar_link">
     <material>Gazebo/Blue</material>
   </gazebo>
 
