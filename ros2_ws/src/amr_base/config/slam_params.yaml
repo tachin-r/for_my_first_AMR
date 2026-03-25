@@ -18,14 +18,16 @@ slam_toolbox:
     mode: mapping          # mapping | localization
 
     # === Scan matching ===
-    debug_logging: false
+    debug_logging: true
     throttle_scans: 1
     transform_publish_period: 0.02   # 50 Hz
-    map_update_interval: 5.0         # วินาที
+    transform_timeout: 0.5           # รอ TF ได้ถึง 0.5 วิ
+    tf_buffer_duration: 30.          # เก็บ TF ไว้ 30 วิ
+    map_update_interval: 2.0         # update ถี่ขึ้น
     resolution: 0.05                 # 5cm per pixel
     max_laser_range: 8.0             # X3 Pro max range
-    minimum_travel_distance: 0.05   # update map ทุก 5cm
-    minimum_travel_heading: 0.1     # หรือทุก ~6 degrees
+    minimum_travel_distance: 0.01   # ต่ำมากเพื่อ debug
+    minimum_travel_heading: 0.05    # ต่ำมากเพื่อ debug
 
     scan_buffer_size: 10
     scan_buffer_maximum_scan_distance: 10.0
