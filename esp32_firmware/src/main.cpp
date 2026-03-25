@@ -70,8 +70,13 @@ float PID_KD =   2.0f;
 
 #define PID_LOOP_MS     50     // 20 Hz control loop
 #define MAX_PWM         230    // เผื่อ headroom (max 255)
-#define MIN_START_PWM   65     // PWM ต่ำสุดที่มอเตอร์เริ่มหมุน (dead-zone kickstart)
+#define MIN_START_PWM   45     // ลดจาก 65→45 เพื่อให้หมุนช้าได้ (ω=1.0 rad/s)
 #define CMD_TIMEOUT_MS  500    // หยุดถ้าไม่ได้รับคำสั่งนาน 500ms
+
+// === ทิศทางหุ่น ===
+// true  = caster wheel อยู่ด้านหน้า (ข้างหน้าคือด้านที่ไม่มีมอเตอร์)
+// false = drive wheels อยู่ด้านหน้า
+#define CASTER_IS_FRONT true
 
 // ================================================================
 //  GLOBAL STATE
@@ -109,20 +114,37 @@ unsigned long last_cmd_ms  = 0;
  * หมายเหตุ: ถ้าล้อหมุนกลับทิศกับที่คาด ให้สลับสัญลักษณ์ +/- ในแต่ละ ISR
  */
 void IRAM_ATTR isr_enc_A() {
+#if CASTER_IS_FRONT
+  // เมื่อ caster ด้านหน้า: วิ่งหน้า → enc เพิ่ม (+)
+  if (digitalRead(ENC_A_PHA) == digitalRead(ENC_A_PHB)) {
+    enc_A_count++;
+  } else {
+    enc_A_count--;
+  }
+#else
   if (digitalRead(ENC_A_PHA) == digitalRead(ENC_A_PHB)) {
     enc_A_count--;
   } else {
     enc_A_count++;
   }
+#endif
 }
 
 void IRAM_ATTR isr_enc_B() {
-  // Motor B อยู่ฝั่งตรงข้าม — สลับทิศ
+  // Motor B อยู่ฝั่งตรงข้าม
+#if CASTER_IS_FRONT
+  if (digitalRead(ENC_B_PHA) == digitalRead(ENC_B_PHB)) {
+    enc_B_count--;
+  } else {
+    enc_B_count++;
+  }
+#else
   if (digitalRead(ENC_B_PHA) == digitalRead(ENC_B_PHB)) {
     enc_B_count++;
   } else {
     enc_B_count--;
   }
+#endif
 }
 
 // ================================================================

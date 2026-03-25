@@ -249,13 +249,43 @@ echo '{"l":0.1,"r":0.1}' > /dev/esp32
 cat /dev/esp32
 ```
 
-### SLAM ไม่สร้าง map
+### SLAM ไม่สร้าง map — QoS Mismatch
 
+> **อาการ:** `/map` ไม่โผล่ใน `ros2 topic list`, warn: `requesting incompatible QoS... RELIABILITY_QOS_POLICY`
+
+**สาเหตุ:** YDLiDAR publish `/scan` แบบ `BEST_EFFORT` แต่ slam_toolbox subscribe แบบ `RELIABLE` → ไม่รับ scan เลย
+
+**แก้:** ใช้ `scan_qos_bridge` node (มีอยู่แล้วใน slam_launch.py) ที่แปลง QoS ให้อัตโนมัติ  
+ตรวจว่า node รันอยู่:
 ```bash
-# ตรวจ TF chain
-ros2 run tf2_ros tf2_echo odom base_link
-ros2 run tf2_ros tf2_echo map odom
+ros2 node list | grep bridge
+# ต้องเห็น /scan_qos_bridge
 ```
+
+---
+
+### SLAM ไม่สร้าง map — Lifecycle Not Activated
+
+> **อาการ:** `/map` ไม่โผล่, `ros2 node info /slam_toolbox | grep Subscribers` เห็นแค่ `/parameter_events`
+
+**สาเหตุ:** slam_toolbox เป็น lifecycle node ที่ไม่ถูก activate → ไม่เคย subscribe `/scan` เลย
+
+**แก้ Option 1** (ถาวร — ทำใน slam_launch.py แล้ว):
+```python
+parameters=[slam_params, {
+    'use_sim_time': False,
+    'use_lifecycle_manager': False,  # auto-activate
+}]
+```
+
+**แก้ Option 2** (manual ชั่วคราว):
+```bash
+ros2 lifecycle set /slam_toolbox configure
+ros2 lifecycle set /slam_toolbox activate
+```
+
+หลังแก้แล้ว `/map` จะโผล่ทันทีที่หุ่นเคลื่อนที่ครับ
+
 
 ### Rebuild หลัง git pull
 
