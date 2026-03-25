@@ -24,6 +24,7 @@ setup(
         'console_scripts': [
             'esp32_bridge = amr_base.esp32_bridge:main',
             'scan_qos_bridge = amr_base.scan_qos_bridge:main',
+            'goal_relay = amr_base.goal_relay:main',
         ],
     },
 )
