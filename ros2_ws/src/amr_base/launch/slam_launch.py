@@ -115,10 +115,8 @@ def generate_launch_description():
         executable='async_slam_toolbox_node',
         name='slam_toolbox',
         output='screen',
-        parameters=[slam_params, {
-            'use_sim_time': False,
-            'scan_topic': '/scan_reliable',   # ใช้ topic ที่ QoS ถูกต้อง
-        }],
+        parameters=[slam_params, {'use_sim_time': False}],
+        remappings=[('/scan', '/scan_reliable')],  # ใช้ remap แทน parameter
     )
 
     # ── 5. RViz2 (ปิดได้เพื่อประหยัด CPU บน Pi5) ──────────────────
