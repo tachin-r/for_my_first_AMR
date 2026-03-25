@@ -101,13 +101,24 @@ def generate_launch_description():
         }]
     )
 
+    # ── 3.5 Scan QoS Bridge (/scan BestEffort → /scan_reliable Reliable) ──
+    scan_bridge = Node(
+        package='amr_base',
+        executable='scan_qos_bridge',
+        name='scan_qos_bridge',
+        output='screen',
+    )
+
     # ── 4. SLAM Toolbox ───────────────────────────────────────────
     slam_toolbox = Node(
         package='slam_toolbox',
         executable='async_slam_toolbox_node',
         name='slam_toolbox',
         output='screen',
-        parameters=[slam_params, {'use_sim_time': False}],
+        parameters=[slam_params, {
+            'use_sim_time': False,
+            'scan_topic': '/scan_reliable',   # ใช้ topic ที่ QoS ถูกต้อง
+        }],
     )
 
     # ── 5. RViz2 (ปิดได้เพื่อประหยัด CPU บน Pi5) ──────────────────
@@ -127,6 +138,7 @@ def generate_launch_description():
         robot_state_publisher,
         esp32_bridge_node,
         ydlidar_node,
+        scan_bridge,
         slam_toolbox,
         rviz,
     ])
