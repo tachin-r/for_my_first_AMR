@@ -114,23 +114,24 @@ def generate_launch_description():
         parameters=[nav2_params, {'yaml_filename': map_file}]
     )
 
-    # ── 5. AMCL (localization) ────────────────────────────────────────
+    # ── 5. AMCL (localization) ────────────────────────────────────
     amcl = Node(
         package='nav2_amcl',
         executable='amcl',
         name='amcl',
         output='screen',
-        parameters=[nav2_params]
+        parameters=[nav2_params],
+        remappings=[('/scan', '/scan_reliable')],  # QoS bridge topic
     )
 
-    # ── 6. Controller (DWB) ───────────────────────────────────────────
+    # ── 6. Controller (DWB) ────────────────────────────────────────
     controller = Node(
         package='nav2_controller',
         executable='controller_server',
         name='controller_server',
         output='screen',
         parameters=[nav2_params],
-        remappings=[('cmd_vel', 'cmd_vel_nav')]
+        # ไม่ใช้ velocity_smoother → ส่ง cmd_vel ตรงๆ ไปแบริดจ์
     )
 
     # ── 7. Planner (NavFn) ────────────────────────────────────────────
@@ -160,20 +161,7 @@ def generate_launch_description():
         parameters=[nav2_params]
     )
 
-    # ── 10. Velocity Smoother ─────────────────────────────────────────
-    velocity_smoother = Node(
-        package='nav2_velocity_smoother',
-        executable='velocity_smoother',
-        name='velocity_smoother',
-        output='screen',
-        parameters=[nav2_params],
-        remappings=[
-            ('cmd_vel', 'cmd_vel_nav'),
-            ('cmd_vel_smoothed', 'cmd_vel')
-        ]
-    )
-
-    # ── 11. Lifecycle Manager ─────────────────────────────────────────
+    # ── 11. Lifecycle Manager ──────────────────────────────────────────
     lifecycle_manager = Node(
         package='nav2_lifecycle_manager',
         executable='lifecycle_manager',
@@ -189,7 +177,7 @@ def generate_launch_description():
                 'planner_server',
                 'behavior_server',
                 'bt_navigator',
-                'velocity_smoother',
+                # velocity_smoother ถูกเอาออกเพื่อลด complexity
             ]
         }]
     )
@@ -217,7 +205,7 @@ def generate_launch_description():
         planner,
         behavior,
         bt_navigator,
-        velocity_smoother,
+        # velocity_smoother ถูกเอาออก
         lifecycle_manager,
         rviz,
     ])
