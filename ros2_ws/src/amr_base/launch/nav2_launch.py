@@ -1,27 +1,25 @@
 #!/usr/bin/env python3
 """
-nav2_launch.py — Nav2 Autonomous Navigation Launch
+nav2_launch.py — Nav2 Minimal Autonomous Navigation
 ====================================================
-รัน: ros2 launch amr_base nav2_launch.py map:=~/maps/my_room.yaml
+Launch nodes เองทีละตัว (ไม่ใช้ bringup_launch.py)
+เพื่อหลีกเลี่ยงปัญหา docking_server/route_server ใน Jazzy
 
-Pi5 ต้อง install nav2 ก่อน:
-  sudo apt install -y ros-jazzy-nav2-bringup
+รัน: ros2 launch amr_base nav2_launch.py map:=~/maps/my_room.yaml
 """
 
 import os
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
-from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.actions import DeclareLaunchArgument
+from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration, Command
-from launch_ros.actions import Node
+from launch_ros.actions import Node, LoadCompositeNode
 from launch_ros.parameter_descriptions import ParameterValue
 from ament_index_python.packages import get_package_share_directory
 
 
 def generate_launch_description():
     pkg      = get_package_share_directory('amr_base')
-    nav2_pkg = get_package_share_directory('nav2_bringup')
-
     urdf_file   = os.path.join(pkg, 'urdf', 'amr.urdf.xml')
     nav2_params = os.path.join(pkg, 'config', 'nav2_params.yaml')
     rviz_config = os.path.join(pkg, 'rviz', 'slam.rviz')
@@ -33,7 +31,7 @@ def generate_launch_description():
         description='Path to map YAML file')
     launch_rviz_arg = DeclareLaunchArgument(
         'launch_rviz', default_value='false',
-        description='เปิด RViz บน Pi5 ไหม (false = ประหยัด CPU)')
+        description='เปิด RViz บน Pi5 ไหม')
 
     map_file    = LaunchConfiguration('map')
     launch_rviz = LaunchConfiguration('launch_rviz')
@@ -107,21 +105,96 @@ def generate_launch_description():
         output='screen',
     )
 
-    # ── 4. Nav2 Bringup (map_server + amcl + planner + controller) ───
-    nav2_bringup = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(nav2_pkg, 'launch', 'bringup_launch.py')
-        ),
-        launch_arguments={
-            'map':          map_file,
-            'params_file':  nav2_params,
-            'use_sim_time': 'false',
-            'slam':         'False',    # ใช้ map ที่มีอยู่ ไม่ SLAM
-        }.items(),
+    # ── 4. Map Server ─────────────────────────────────────────────────
+    map_server = Node(
+        package='nav2_map_server',
+        executable='map_server',
+        name='map_server',
+        output='screen',
+        parameters=[nav2_params, {'yaml_filename': map_file}]
     )
 
-    # ── 5. RViz (optional บน Pi5) ─────────────────────────────────────
-    from launch.conditions import IfCondition
+    # ── 5. AMCL (localization) ────────────────────────────────────────
+    amcl = Node(
+        package='nav2_amcl',
+        executable='amcl',
+        name='amcl',
+        output='screen',
+        parameters=[nav2_params]
+    )
+
+    # ── 6. Controller (DWB) ───────────────────────────────────────────
+    controller = Node(
+        package='nav2_controller',
+        executable='controller_server',
+        name='controller_server',
+        output='screen',
+        parameters=[nav2_params],
+        remappings=[('cmd_vel', 'cmd_vel_nav')]
+    )
+
+    # ── 7. Planner (NavFn) ────────────────────────────────────────────
+    planner = Node(
+        package='nav2_planner',
+        executable='planner_server',
+        name='planner_server',
+        output='screen',
+        parameters=[nav2_params]
+    )
+
+    # ── 8. Behavior Server ────────────────────────────────────────────
+    behavior = Node(
+        package='nav2_behaviors',
+        executable='behavior_server',
+        name='behavior_server',
+        output='screen',
+        parameters=[nav2_params]
+    )
+
+    # ── 9. BT Navigator ───────────────────────────────────────────────
+    bt_navigator = Node(
+        package='nav2_bt_navigator',
+        executable='bt_navigator',
+        name='bt_navigator',
+        output='screen',
+        parameters=[nav2_params]
+    )
+
+    # ── 10. Velocity Smoother ─────────────────────────────────────────
+    velocity_smoother = Node(
+        package='nav2_velocity_smoother',
+        executable='velocity_smoother',
+        name='velocity_smoother',
+        output='screen',
+        parameters=[nav2_params],
+        remappings=[
+            ('cmd_vel', 'cmd_vel_nav'),
+            ('cmd_vel_smoothed', 'cmd_vel')
+        ]
+    )
+
+    # ── 11. Lifecycle Manager ─────────────────────────────────────────
+    lifecycle_manager = Node(
+        package='nav2_lifecycle_manager',
+        executable='lifecycle_manager',
+        name='lifecycle_manager_navigation',
+        output='screen',
+        parameters=[{
+            'use_sim_time': False,
+            'autostart': True,
+            'node_names': [
+                'map_server',
+                'amcl',
+                'controller_server',
+                'planner_server',
+                'behavior_server',
+                'bt_navigator',
+                'velocity_smoother',
+            ]
+        }]
+    )
+
+    # ── 12. RViz (optional บน Pi5) ────────────────────────────────────
     rviz = Node(
         package='rviz2',
         executable='rviz2',
@@ -138,6 +211,13 @@ def generate_launch_description():
         esp32_bridge,
         ydlidar,
         scan_bridge,
-        nav2_bringup,
+        map_server,
+        amcl,
+        controller,
+        planner,
+        behavior,
+        bt_navigator,
+        velocity_smoother,
+        lifecycle_manager,
         rviz,
     ])
