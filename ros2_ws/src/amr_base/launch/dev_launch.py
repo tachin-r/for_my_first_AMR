@@ -49,9 +49,18 @@ def generate_launch_description():
         condition=IfCondition(is_slam),
     )
 
+    # ── Goal Relay (nav2 เท่านั้น) — /goal_pose → navigate_to_pose ──
+    goal_relay = Node(
+        package='amr_base',
+        executable='goal_relay',
+        name='goal_relay', output='screen',
+        condition=IfCondition(is_nav2),
+    )
+
     return LaunchDescription([
         mode_arg,
         rviz_slam,
         rviz_nav2,
         teleop,
+        goal_relay,
     ])
