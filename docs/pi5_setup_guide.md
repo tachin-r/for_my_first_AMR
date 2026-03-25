@@ -275,4 +275,89 @@ git pull
 cd ros2_ws
 colcon build --packages-select amr_base --symlink-install
 source install/setup.bash
+
+---
+
+## 💻 Remote Ubuntu Machine (RViz + Teleop)
+
+> ใช้เมื่อ dev machine มี WiFi ดีกว่า Pi5 หรือต้องการดู map บนจอใหญ่
+
+### ต้องมีก่อน
+- Ubuntu 24.04 + ROS2 Jazzy ติดตั้งแล้ว
+- อยู่ WiFi เดียวกับ Pi5
+
+### Step 1 — ติดตั้ง packages ที่จำเป็น
+
+```bash
+sudo apt update
+sudo apt install -y \
+  ros-jazzy-slam-toolbox \
+  ros-jazzy-robot-state-publisher \
+  ros-jazzy-teleop-twist-keyboard \
+  ros-jazzy-rviz2
+```
+
+### Step 2 — Clone repo (แค่เพื่อได้ RViz config)
+
+```bash
+git clone https://github.com/tachin-r/for_my_first_AMR.git ~/amr
+source /opt/ros/jazzy/setup.bash
+cd ~/amr/ros2_ws
+colcon build --packages-select amr_base --symlink-install
+echo 'source /opt/ros/jazzy/setup.bash' >> ~/.bashrc
+echo 'source ~/amr/ros2_ws/install/setup.bash' >> ~/.bashrc
+source ~/.bashrc
+```
+
+### Step 3 — ตั้ง ROS_DOMAIN_ID ให้ตรงกับ Pi5
+
+```bash
+# ทั้งสองเครื่องต้องใช้ค่าเดียวกัน (default = 0)
+echo 'export ROS_DOMAIN_ID=0' >> ~/.bashrc
+source ~/.bashrc
+```
+
+### Step 4 — เปิด RViz ดู map
+
+```bash
+rviz2 -d ~/amr/ros2_ws/src/amr_base/rviz/slam.rviz
+```
+
+> ⚠️ ถ้า map ไม่ขึ้น → เปลี่ยน **Fixed Frame** จาก `map` เป็น `odom` ก่อน  
+> แล้วค่อยเปลี่ยนกลับเมื่อ SLAM เริ่ม publish map
+
+### Step 5 — ควบคุมหุ่น (Terminal ใหม่)
+
+```bash
+ros2 run teleop_twist_keyboard teleop_twist_keyboard
+```
+
+### ตรวจสอบว่าเห็น Pi5 topics
+
+```bash
+ros2 topic list
+# ต้องเห็น /scan /odom /map /cmd_vel /tf
+# ถ้าไม่เห็น → เช็คว่า Pi5 รัน launch อยู่ และ ROS_DOMAIN_ID ตรงกัน
+```
+
+### ถ้า topics ไม่ cross เครื่อง
+
+```bash
+# ลอง ping Pi5 ก่อน
+ping <Pi5_IP>
+
+# ถ้า ping ได้แต่ topics ไม่เห็น → ใช้ CycloneDDS (ดีกว่าบน WiFi)
+sudo apt install -y ros-jazzy-rmw-cyclonedds-cpp
+echo 'export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp' >> ~/.bashrc
+source ~/.bashrc
+# ตั้งทั้งสองเครื่อง!
+```
+
+### สรุป workflow
+
+```
+Pi5:          ros2 launch amr_base slam_launch.py launch_rviz:=false
+Ubuntu dev:   rviz2 -d ~/amr/ros2_ws/src/amr_base/rviz/slam.rviz
+Ubuntu dev:   ros2 run teleop_twist_keyboard teleop_twist_keyboard
+```
 ```
