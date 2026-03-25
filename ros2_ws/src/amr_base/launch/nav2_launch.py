@@ -49,6 +49,14 @@ def generate_launch_description():
         }]
     )
 
+    # ── 1.5 Joint State Publisher (l้อ wheel ต้องการ joint states) ────
+    joint_state_publisher = Node(
+        package='joint_state_publisher',
+        executable='joint_state_publisher',
+        name='joint_state_publisher',
+        output='screen',
+    )
+
     # ── 2. ESP32 Bridge ───────────────────────────────────────────────
     esp32_bridge = Node(
         package='amr_base',
@@ -196,6 +204,7 @@ def generate_launch_description():
         map_arg,
         launch_rviz_arg,
         robot_state_publisher,
+        joint_state_publisher,
         esp32_bridge,
         ydlidar,
         scan_bridge,
