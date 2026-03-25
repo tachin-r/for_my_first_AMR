@@ -83,7 +83,8 @@ ros2 run nav2_map_server map_saver_cli -f ~/maps/my_room
 
 ```bash
 source ~/amr/ros2_ws/install/setup.bash
-ros2 launch amr_base nav2_launch.py map:=~/maps/my_room.yaml
+# ⚠️ ต้องใช้ absolute path (~ ไม่ทำงานกับ map_server)
+ros2 launch amr_base nav2_launch.py map:=/home/khaitapad/maps/my_room.yaml
 ```
 
 รอจนเห็น:
