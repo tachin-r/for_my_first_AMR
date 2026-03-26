@@ -128,8 +128,8 @@ local_costmap:
       width: 3
       height: 3
       resolution: 0.05
-      robot_radius: 0.15
-      transform_tolerance: 1.0    # เพิ่มจาก default เพื่อรับ TF ที่ช้ากว่า scan
+      robot_radius: 0.10      # ลดจาก 0.15 → 0.10 (robot ไม่ใหญ่มาก)
+      transform_tolerance: 1.0
       plugins: ['obstacle_layer', 'inflation_layer']
       obstacle_layer:
         plugin: nav2_costmap_2d::ObstacleLayer
@@ -144,7 +144,7 @@ local_costmap:
       inflation_layer:
         plugin: nav2_costmap_2d::InflationLayer
         cost_scaling_factor: 3.0
-        inflation_radius: 0.30    # ระยะเว้นรอบสิ่งกีดขวาง
+        inflation_radius: 0.15    # ลดจาก 0.30 → 0.15 เพื่อไม่บล็อกเส้นทาง
       always_send_full_costmap: true
 
 global_costmap:
@@ -155,10 +155,10 @@ global_costmap:
       global_frame: map
       robot_base_frame: base_link
       use_sim_time: false
-      robot_radius: 0.15
+      robot_radius: 0.10
       resolution: 0.05
       track_unknown_space: true
-      transform_tolerance: 1.0    # เพิ่มจาก default
+      transform_tolerance: 1.0
       plugins: ['static_layer', 'obstacle_layer', 'inflation_layer']
       static_layer:
         plugin: nav2_costmap_2d::StaticLayer
@@ -176,7 +176,7 @@ global_costmap:
       inflation_layer:
         plugin: nav2_costmap_2d::InflationLayer
         cost_scaling_factor: 3.0
-        inflation_radius: 0.30
+        inflation_radius: 0.15    # ลดจาก 0.30 → 0.15
       always_send_full_costmap: true
 
 planner_server:
