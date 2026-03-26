@@ -105,7 +105,7 @@ controller_server:
       use_cost_regulated_linear_velocity_scaling: false
       regulated_linear_scaling_min_radius: 0.9
       regulated_linear_scaling_min_speed: 0.15  # เพิ่ม 0.1→0.15
-      allow_reversing: false
+      allow_reversing: true  # ถอยหลังได้ ไม่ต้องหมุน 180°
       max_angular_accel: 3.2
       max_robot_pose_search_dist: 10.0
 
