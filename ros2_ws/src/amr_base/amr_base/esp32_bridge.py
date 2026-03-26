@@ -171,11 +171,8 @@ class ESP32Bridge(Node):
         now_msg = now.to_msg()
 
         # ---- TF: odom → base_link ----
-        # ใช้ timestamp ถอยหลัง 100ms เพื่อให้ AMCL/costmap
-        # หา transform ได้ทันเมื่อรับ scan (แก้ 'timestamp earlier than cache')
-        tf_time = (now - Duration(nanoseconds=100_000_000)).to_msg()
         tf = TransformStamped()
-        tf.header.stamp    = tf_time
+        tf.header.stamp    = now_msg
         tf.header.frame_id = self.odom_frame
         tf.child_frame_id  = self.base_frame
         tf.transform.translation.x = self.x
