@@ -158,6 +158,7 @@ def generate_launch_description():
         parameters=[{
             'use_sim_time': False,
             'autostart': True,
+            'bond_timeout': 10.0,
             'node_names': ['slam_toolbox'],
         }],
         condition=IfCondition(is_slam),
@@ -243,6 +244,7 @@ def generate_launch_description():
         parameters=[{
             'use_sim_time': False,
             'autostart': True,
+            'bond_timeout': 10.0,
             'node_names': [
                 'map_server',
                 'slam_toolbox',
