@@ -161,7 +161,7 @@ class ESP32Bridge(Node):
         d_left  = d_lt * self.dist_per_count   # m
         d_right = d_rt * self.dist_per_count   # m
         d_center = (d_left + d_right) / 2.0
-        d_theta  = (d_left - d_right) / self.wheelbase  # swapped: fix inverted rotation
+        d_theta  = (d_right - d_left) / self.wheelbase
 
         self.theta += d_theta
         self.x     += d_center * math.cos(self.theta)
