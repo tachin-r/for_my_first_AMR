@@ -286,10 +286,8 @@ void loop() {
       if (!e) {
         // คำสั่งความเร็ว: {"l": m/s, "r": m/s}
         if (doc.containsKey("l") || doc.containsKey("r")) {
-          // Motor A = physical right, Motor B = physical left
-          // (สลับเพื่อให้ตรง URDF: left_wheel y=+0.1, right_wheel y=-0.1)
-          target_vel_A = doc["r"] | 0.0f;   // Motor A ← right command
-          target_vel_B = doc["l"] | 0.0f;   // Motor B ← left command
+          target_vel_A = doc["l"] | 0.0f;   // Motor A = left wheel
+          target_vel_B = doc["r"] | 0.0f;   // Motor B = right wheel
           last_cmd_ms  = now;
         }
         // ปรับ PID gains แบบ runtime: {"pid_kp":80,"pid_ki":15,"pid_kd":1}
@@ -349,11 +347,10 @@ void loop() {
     //  4) ส่ง Odometry กลับไปที่ Pi5
     // ----------------------------------------------------------------
     StaticJsonDocument<192> out;
-    // Encoder output: swap to match URDF left/right
-    out["lt"] = cur_B;            // left ticks  ← Motor B (physical left)
-    out["rt"] = cur_A;            // right ticks ← Motor A (physical right)
-    out["lv"] = serialized(String(current_vel_B, 4));   // left  velocity
-    out["rv"] = serialized(String(current_vel_A, 4));   // right velocity
+    out["lt"] = cur_A;            // left  encoder ticks (Motor A)
+    out["rt"] = cur_B;            // right encoder ticks (Motor B)
+    out["lv"] = serialized(String(current_vel_A, 4));   // left  velocity m/s
+    out["rv"] = serialized(String(current_vel_B, 4));   // right velocity m/s
     out["dt"] = (int)elapsed;     // actual loop time (ms)
 
     serializeJson(out, Serial);
