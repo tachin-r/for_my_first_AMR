@@ -34,13 +34,18 @@ def generate_launch_description():
         'map',
         default_value=os.path.expanduser('~/maps/my_room.yaml'),
         description='Path to map YAML file (เฉพาะ nav2 mode)')
+    serialized_map_arg = DeclareLaunchArgument(
+        'serialized_map',
+        default_value=os.path.expanduser('~/maps/my_room_serialized'),
+        description='Path to slam_toolbox serialized map (ไม่ต้องใส่นามสกุล)')
     launch_rviz_arg = DeclareLaunchArgument(
         'launch_rviz', default_value='false',
         description='เปิด RViz บน Pi5 ไหม')
 
-    mode        = LaunchConfiguration('mode')
-    map_file    = LaunchConfiguration('map')
-    launch_rviz = LaunchConfiguration('launch_rviz')
+    mode            = LaunchConfiguration('mode')
+    map_file        = LaunchConfiguration('map')
+    serialized_map  = LaunchConfiguration('serialized_map')
+    launch_rviz     = LaunchConfiguration('launch_rviz')
 
     is_slam = PythonExpression(['"', mode, '" == "slam"'])
     is_nav2 = PythonExpression(['"', mode, '" == "nav2"'])
@@ -189,7 +194,7 @@ def generate_launch_description():
             'base_frame': 'base_link',
             'scan_topic': '/scan_reliable',
             'mode': 'localization',
-            'map_file_name': map_file,
+            'map_file_name': serialized_map,
             'map_start_at_dock': True,
             'resolution': 0.05,
             'max_laser_range': 8.0,
@@ -270,6 +275,7 @@ def generate_launch_description():
     return LaunchDescription([
         mode_arg,
         map_arg,
+        serialized_map_arg,
         launch_rviz_arg,
         # ── Always ──
         robot_state_publisher,
