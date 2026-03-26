@@ -150,7 +150,7 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /local_plan
       Value: true
-    - Class: rviz_default_plugins/Pose
+    - Class: rviz_default_plugins/PoseWithCovariance
       Color: 255; 25; 0
       Enabled: true
       Head Diameter: 0.30000001192092896
