@@ -76,7 +76,7 @@ float PID_KD =   2.0f;
 // === ทิศทางหุ่น ===
 // true  = caster wheel อยู่ด้านหน้า (ข้างหน้าคือด้านที่ไม่มีมอเตอร์)
 // false = drive wheels อยู่ด้านหน้า
-#define CASTER_IS_FRONT true
+#define CASTER_IS_FRONT false
 
 // ================================================================
 //  GLOBAL STATE
