@@ -1,42 +1,51 @@
 #!/usr/bin/env python3
 """
-nav2_launch.py — Nav2 Minimal Autonomous Navigation
-====================================================
-Launch nodes เองทีละตัว (ไม่ใช้ bringup_launch.py)
-เพื่อหลีกเลี่ยงปัญหา docking_server/route_server ใน Jazzy
+nav2_launch.py — Pi5 Launch: SLAM or Nav2
+==========================================
+SLAM mode (สร้างแผนที่):
+  ros2 launch amr_base nav2_launch.py
+  ros2 launch amr_base nav2_launch.py mode:=slam
 
-รัน: ros2 launch amr_base nav2_launch.py map:=~/maps/my_room.yaml
+Nav2 mode (นำทาง):
+  ros2 launch amr_base nav2_launch.py mode:=nav2 map:=~/maps/my_room.yaml
 """
 
 import os
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.conditions import IfCondition
-from launch.substitutions import LaunchConfiguration, Command
+from launch.substitutions import (
+    LaunchConfiguration, Command, PythonExpression)
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 from ament_index_python.packages import get_package_share_directory
 
 
 def generate_launch_description():
-    pkg      = get_package_share_directory('amr_base')
+    pkg         = get_package_share_directory('amr_base')
     urdf_file   = os.path.join(pkg, 'urdf', 'amr.urdf.xml')
     nav2_params = os.path.join(pkg, 'config', 'nav2_params.yaml')
-    rviz_config = os.path.join(pkg, 'rviz', 'slam.rviz')
 
     # ── Launch Arguments ──────────────────────────────────────────────
+    mode_arg = DeclareLaunchArgument(
+        'mode', default_value='slam',
+        description='slam (สร้างแผนที่) หรือ nav2 (นำทาง)')
     map_arg = DeclareLaunchArgument(
         'map',
         default_value=os.path.expanduser('~/maps/my_room.yaml'),
-        description='Path to map YAML file')
+        description='Path to map YAML file (เฉพาะ nav2 mode)')
     launch_rviz_arg = DeclareLaunchArgument(
         'launch_rviz', default_value='false',
         description='เปิด RViz บน Pi5 ไหม')
 
+    mode        = LaunchConfiguration('mode')
     map_file    = LaunchConfiguration('map')
     launch_rviz = LaunchConfiguration('launch_rviz')
 
-    # ── 1. robot_state_publisher ──────────────────────────────────────
+    is_slam = PythonExpression(['"', mode, '" == "slam"'])
+    is_nav2 = PythonExpression(['"', mode, '" == "nav2"'])
+
+    # ── 1. Robot State Publisher ──────────────────────────────────────
     robot_state_publisher = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
@@ -49,7 +58,7 @@ def generate_launch_description():
         }]
     )
 
-    # ── 1.5 Joint State Publisher (l้อ wheel ต้องการ joint states) ────
+    # ── 1.5 Joint State Publisher ─────────────────────────────────────
     joint_state_publisher = Node(
         package='joint_state_publisher',
         executable='joint_state_publisher',
@@ -57,7 +66,7 @@ def generate_launch_description():
         output='screen',
     )
 
-    # ── 2. ESP32 Bridge ───────────────────────────────────────────────
+    # ── 2. ESP32 Bridge ──────────────────────────────────────────────
     esp32_bridge = Node(
         package='amr_base',
         executable='esp32_bridge',
@@ -105,7 +114,7 @@ def generate_launch_description():
         }]
     )
 
-    # ── 3.5 Scan QoS Bridge ───────────────────────────────────────────
+    # ── 3.5 Scan QoS Bridge ──────────────────────────────────────────
     scan_bridge = Node(
         package='amr_base',
         executable='scan_qos_bridge',
@@ -113,63 +122,91 @@ def generate_launch_description():
         output='screen',
     )
 
-    # ── 4. Map Server ─────────────────────────────────────────────────
+    # ══════════════════════════════════════════════════════════════════
+    #  SLAM MODE — slam_toolbox (สร้างแผนที่)
+    # ══════════════════════════════════════════════════════════════════
+    slam_toolbox = Node(
+        package='slam_toolbox',
+        executable='async_slam_toolbox_node',
+        name='slam_toolbox',
+        output='screen',
+        parameters=[{
+            'use_sim_time': False,
+            'odom_frame': 'odom',
+            'map_frame': 'map',
+            'base_frame': 'base_link',
+            'scan_topic': '/scan_reliable',
+            'mode': 'mapping',
+            'resolution': 0.05,
+            'max_laser_range': 8.0,
+            'minimum_travel_distance': 0.3,
+            'minimum_travel_heading': 0.3,
+            'map_update_interval': 3.0,
+            'transform_timeout': 0.5,
+            'tf_buffer_duration': 30.0,
+            'stack_size_to_use': 40000000,
+        }],
+        condition=IfCondition(is_slam),
+    )
+
+    # ══════════════════════════════════════════════════════════════════
+    #  NAV2 MODE — map_server + amcl + navigation nodes
+    # ══════════════════════════════════════════════════════════════════
     map_server = Node(
         package='nav2_map_server',
         executable='map_server',
         name='map_server',
         output='screen',
-        parameters=[nav2_params, {'yaml_filename': map_file}]
+        parameters=[nav2_params, {'yaml_filename': map_file}],
+        condition=IfCondition(is_nav2),
     )
 
-    # ── 5. AMCL (localization) ────────────────────────────────────
     amcl = Node(
         package='nav2_amcl',
         executable='amcl',
         name='amcl',
         output='screen',
         parameters=[nav2_params],
-        remappings=[('/scan', '/scan_reliable')],  # QoS bridge topic
+        remappings=[('/scan', '/scan_reliable')],
+        condition=IfCondition(is_nav2),
     )
 
-    # ── 6. Controller (DWB) ────────────────────────────────────────
     controller = Node(
         package='nav2_controller',
         executable='controller_server',
         name='controller_server',
         output='screen',
         parameters=[nav2_params],
-        # ไม่ใช้ velocity_smoother → ส่ง cmd_vel ตรงๆ ไปแบริดจ์
+        condition=IfCondition(is_nav2),
     )
 
-    # ── 7. Planner (NavFn) ────────────────────────────────────────────
     planner = Node(
         package='nav2_planner',
         executable='planner_server',
         name='planner_server',
         output='screen',
-        parameters=[nav2_params]
+        parameters=[nav2_params],
+        condition=IfCondition(is_nav2),
     )
 
-    # ── 8. Behavior Server ────────────────────────────────────────────
     behavior = Node(
         package='nav2_behaviors',
         executable='behavior_server',
         name='behavior_server',
         output='screen',
-        parameters=[nav2_params]
+        parameters=[nav2_params],
+        condition=IfCondition(is_nav2),
     )
 
-    # ── 9. BT Navigator ───────────────────────────────────────────────
     bt_navigator = Node(
         package='nav2_bt_navigator',
         executable='bt_navigator',
         name='bt_navigator',
         output='screen',
-        parameters=[nav2_params]
+        parameters=[nav2_params],
+        condition=IfCondition(is_nav2),
     )
 
-    # ── 11. Lifecycle Manager ──────────────────────────────────────────
     lifecycle_manager = Node(
         package='nav2_lifecycle_manager',
         executable='lifecycle_manager',
@@ -185,36 +222,41 @@ def generate_launch_description():
                 'planner_server',
                 'behavior_server',
                 'bt_navigator',
-                # velocity_smoother ถูกเอาออกเพื่อลด complexity
             ]
-        }]
+        }],
+        condition=IfCondition(is_nav2),
     )
 
-    # ── 12. RViz (optional บน Pi5) ────────────────────────────────────
+    # ── RViz (optional บน Pi5) ────────────────────────────────────────
     rviz = Node(
         package='rviz2',
         executable='rviz2',
         name='rviz2',
-        arguments=['-d', rviz_config],
+        arguments=['-d', os.path.join(pkg, 'rviz', 'slam.rviz')],
         output='screen',
         condition=IfCondition(launch_rviz),
     )
 
     return LaunchDescription([
+        mode_arg,
         map_arg,
         launch_rviz_arg,
+        # ── Always ──
         robot_state_publisher,
         joint_state_publisher,
         esp32_bridge,
         ydlidar,
         scan_bridge,
+        # ── SLAM mode ──
+        slam_toolbox,
+        # ── Nav2 mode ──
         map_server,
         amcl,
         controller,
         planner,
         behavior,
         bt_navigator,
-        # velocity_smoother ถูกเอาออก
         lifecycle_manager,
+        # ── Optional ──
         rviz,
     ])

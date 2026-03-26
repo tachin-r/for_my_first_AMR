@@ -215,3 +215,17 @@ for_my_first_AMR/
 2. แสดง costmap + robot pose ใน RViz
 3. กด 2D Goal Pose → หุ่นวางแผนและวิ่งไปเอง
 4. แสดง path planning (เส้นสีเขียว) + obstacle avoidance
+
+
+### อัพเดทหุ่น:
+
+```bash
+# Pi5
+cd ~/amr && git pull
+# Dev
+cd ~/for_my_first_AMR && git pull
+
+# Build
+cd ros2_ws && colcon build --packages-select amr_base --symlink-install
+
+  
