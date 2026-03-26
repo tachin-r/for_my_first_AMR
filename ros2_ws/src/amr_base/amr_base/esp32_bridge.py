@@ -108,7 +108,8 @@ class ESP32Bridge(Node):
         v_l = max(-self.max_linear, min(self.max_linear, v_l))
         v_r = max(-self.max_linear, min(self.max_linear, v_r))
 
-        cmd = json.dumps({'l': round(v_l, 4), 'r': round(v_r, 4)}) + '\n'
+        # Motor A = ล้อขวาจริง, Motor B = ล้อซ้ายจริง
+        cmd = json.dumps({'l': round(v_r, 4), 'r': round(v_l, 4)}) + '\n'
         try:
             self.ser.write(cmd.encode('ascii'))
         except serial.SerialException as e:
@@ -130,8 +131,9 @@ class ESP32Bridge(Node):
                     self.get_logger().info(f'ESP32: {data}')
                     continue
 
-                lt = data.get('lt', 0)
-                rt = data.get('rt', 0)
+                # Motor A (lt) = ล้อขวาจริง, Motor B (rt) = ล้อซ้ายจริง
+                lt = data.get('rt', 0)  # ล้อซ้ายจริง = Motor B
+                rt = data.get('lt', 0)  # ล้อขวาจริง = Motor A
 
                 with self._odom_lock:
                     self._update_odometry(lt, rt)
