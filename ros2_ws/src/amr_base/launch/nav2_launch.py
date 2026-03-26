@@ -164,7 +164,7 @@ def generate_launch_description():
     )
 
     # ══════════════════════════════════════════════════════════════════
-    #  NAV2 MODE — map_server + amcl + navigation nodes
+    #  NAV2 MODE — slam_toolbox (localization) + navigation nodes
     # ══════════════════════════════════════════════════════════════════
     map_server = Node(
         package='nav2_map_server',
@@ -175,13 +175,27 @@ def generate_launch_description():
         condition=IfCondition(is_nav2),
     )
 
-    amcl = Node(
-        package='nav2_amcl',
-        executable='amcl',
-        name='amcl',
+    # slam_toolbox localization mode (แทน AMCL)
+    slam_toolbox_loc = Node(
+        package='slam_toolbox',
+        executable='localization_slam_toolbox_node',
+        name='slam_toolbox',
         output='screen',
-        parameters=[nav2_params],
-        remappings=[('/scan', '/scan_reliable')],
+        parameters=[{
+            'use_sim_time': False,
+            'odom_frame': 'odom',
+            'map_frame': 'map',
+            'base_frame': 'base_link',
+            'scan_topic': '/scan_reliable',
+            'mode': 'localization',
+            'map_file_name': map_file,
+            'map_start_at_dock': True,
+            'resolution': 0.05,
+            'max_laser_range': 8.0,
+            'transform_timeout': 0.5,
+            'tf_buffer_duration': 30.0,
+            'stack_size_to_use': 40000000,
+        }],
         condition=IfCondition(is_nav2),
     )
 
@@ -231,7 +245,7 @@ def generate_launch_description():
             'autostart': True,
             'node_names': [
                 'map_server',
-                'amcl',
+                'slam_toolbox',
                 'controller_server',
                 'planner_server',
                 'behavior_server',
@@ -266,7 +280,7 @@ def generate_launch_description():
         slam_lifecycle_manager,
         # ── Nav2 mode ──
         map_server,
-        amcl,
+        slam_toolbox_loc,
         controller,
         planner,
         behavior,
