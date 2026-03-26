@@ -39,7 +39,7 @@ class ESP32Bridge(Node):
         self.declare_parameter('wheelbase',      0.200)
         self.declare_parameter('encoder_ppr',    506)
         self.declare_parameter('encoder_x2',     True)
-        self.declare_parameter('max_linear',     0.5)
+        self.declare_parameter('max_linear',     1.0)
         self.declare_parameter('max_angular',    2.0)
         self.declare_parameter('odom_frame',     'odom')
         self.declare_parameter('base_frame',     'base_link')
