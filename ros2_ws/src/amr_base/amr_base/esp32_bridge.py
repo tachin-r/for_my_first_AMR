@@ -18,6 +18,7 @@ esp32_bridge.py — ROS2 Serial Bridge Node
 
 import rclpy
 from rclpy.node import Node
+from rclpy.duration import Duration
 from geometry_msgs.msg import Twist, TransformStamped
 from nav_msgs.msg import Odometry
 from tf2_ros import TransformBroadcaster
@@ -166,11 +167,15 @@ class ESP32Bridge(Node):
         self.x     += d_center * math.cos(self.theta)
         self.y     += d_center * math.sin(self.theta)
 
-        now = self.get_clock().now().to_msg()
+        now = self.get_clock().now()
+        now_msg = now.to_msg()
 
         # ---- TF: odom → base_link ----
+        # ใช้ timestamp ถอยหลัง 100ms เพื่อให้ AMCL/costmap
+        # หา transform ได้ทันเมื่อรับ scan (แก้ 'timestamp earlier than cache')
+        tf_time = (now - Duration(nanoseconds=100_000_000)).to_msg()
         tf = TransformStamped()
-        tf.header.stamp    = now
+        tf.header.stamp    = tf_time
         tf.header.frame_id = self.odom_frame
         tf.child_frame_id  = self.base_frame
         tf.transform.translation.x = self.x
@@ -185,7 +190,7 @@ class ESP32Bridge(Node):
 
         # ---- Odometry message ----
         odom = Odometry()
-        odom.header.stamp    = now
+        odom.header.stamp    = now_msg
         odom.header.frame_id = self.odom_frame
         odom.child_frame_id  = self.base_frame
         odom.pose.pose.position.x    = self.x

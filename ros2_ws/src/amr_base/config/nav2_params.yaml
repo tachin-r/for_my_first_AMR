@@ -35,14 +35,21 @@ amcl:
     save_pose_rate: 0.5
     sigma_hit: 0.2
     tf_broadcast: true
-    transform_tolerance: 1.0
+    transform_tolerance: 5.0     # เพิ่มจาก 1.0 → 5.0 สำหรับ Pi5 (แก้ TF timestamp drop)
     update_min_a: 0.1
     update_min_d: 0.05
     z_hit: 0.5
     z_max: 0.05
     z_rand: 0.5
     z_short: 0.05
-    scan_topic: /scan_reliable    # ใช้ QoS bridge topic
+    scan_topic: /scan_reliable
+    # Auto-init — ไม่ต้องกด 2D Pose Estimate ใน RViz อีกต่อไป
+    set_initial_pose: true
+    initial_pose:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      yaw: 0.0
 
 bt_navigator:
   ros__parameters:
@@ -128,8 +135,8 @@ local_costmap:
       width: 3
       height: 3
       resolution: 0.05
-      robot_radius: 0.10      # ลดจาก 0.15 → 0.10 (robot ไม่ใหญ่มาก)
-      transform_tolerance: 1.0
+      robot_radius: 0.10
+      transform_tolerance: 5.0    # match AMCL tolerance
       plugins: ['obstacle_layer', 'inflation_layer']
       obstacle_layer:
         plugin: nav2_costmap_2d::ObstacleLayer
@@ -141,6 +148,8 @@ local_costmap:
           clearing: true
           marking: true
           data_type: LaserScan
+          raytrace_max_range: 5.0
+          obstacle_max_range: 4.0
       inflation_layer:
         plugin: nav2_costmap_2d::InflationLayer
         cost_scaling_factor: 3.0
@@ -158,7 +167,7 @@ global_costmap:
       robot_radius: 0.10
       resolution: 0.05
       track_unknown_space: true
-      transform_tolerance: 1.0
+      transform_tolerance: 5.0    # match AMCL tolerance
       plugins: ['static_layer', 'obstacle_layer', 'inflation_layer']
       static_layer:
         plugin: nav2_costmap_2d::StaticLayer
@@ -173,6 +182,8 @@ global_costmap:
           clearing: true
           marking: true
           data_type: LaserScan
+          raytrace_max_range: 8.0
+          obstacle_max_range: 6.0
       inflation_layer:
         plugin: nav2_costmap_2d::InflationLayer
         cost_scaling_factor: 3.0
