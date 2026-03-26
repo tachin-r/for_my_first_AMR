@@ -70,7 +70,7 @@ float PID_KD =   2.0f;
 
 #define PID_LOOP_MS     50     // 20 Hz control loop
 #define MAX_PWM         250    // เต็มพิกัด
-#define MIN_START_PWM   120    // เพิ่มจาก 80→120 ให้ชนะ friction ล้อ
+#define MIN_START_PWM   180    // เพิ่มจาก 120→180 ให้ลากหุ่นบนพื้นได้
 #define CMD_TIMEOUT_MS  500    // หยุดถ้าไม่ได้รับคำสั่งนาน 500ms
 
 // === ทิศทางหุ่น ===
