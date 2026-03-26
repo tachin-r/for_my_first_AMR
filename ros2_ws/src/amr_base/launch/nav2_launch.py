@@ -149,6 +149,20 @@ def generate_launch_description():
         condition=IfCondition(is_slam),
     )
 
+    # Lifecycle manager สำหรับ SLAM mode (activate slam_toolbox)
+    slam_lifecycle_manager = Node(
+        package='nav2_lifecycle_manager',
+        executable='lifecycle_manager',
+        name='lifecycle_manager_slam',
+        output='screen',
+        parameters=[{
+            'use_sim_time': False,
+            'autostart': True,
+            'node_names': ['slam_toolbox'],
+        }],
+        condition=IfCondition(is_slam),
+    )
+
     # ══════════════════════════════════════════════════════════════════
     #  NAV2 MODE — map_server + amcl + navigation nodes
     # ══════════════════════════════════════════════════════════════════
@@ -249,6 +263,7 @@ def generate_launch_description():
         scan_bridge,
         # ── SLAM mode ──
         slam_toolbox,
+        slam_lifecycle_manager,
         # ── Nav2 mode ──
         map_server,
         amcl,
