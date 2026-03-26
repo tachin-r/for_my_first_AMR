@@ -27,7 +27,7 @@
 | Motor | DC Motor x2 + L298N Driver |
 | Encoder | Quadrature Encoder 506 PPR x2 |
 | LiDAR | YDLiDAR X3 Pro |
-| Wheel | Ø65mm drive wheels + caster |
+| Wheel | Ø65mm drive wheels + caster (front) |
 | Chassis | DIY 16x16cm frame |
 
 ### Software Stack
@@ -36,7 +36,7 @@
 | OS | Ubuntu 24.04 + ROS2 Jazzy |
 | SLAM | slam_toolbox (Online Async) |
 | Navigation | Nav2 (RegulatedPurePursuit) |
-| Localization | AMCL |
+| Localization | slam_toolbox (Scan Matching) |
 | Motor Control | ESP32 PID Controller |
 
 ---
@@ -49,18 +49,18 @@
 # SSH เข้า Pi5
 ssh khaitapad@<PI5_IP>
 
-# รันหุ่น (SLAM mode)
-cd ~/amr/ros2_ws
+# อัพเดทโค้ด (ถ้ามีการเปลี่ยนแปลง)
+cd ~/amr && git pull
+cd ros2_ws && colcon build --packages-select amr_base --symlink-install
 source install/setup.bash
+
+# รันหุ่น (SLAM mode — default)
 ros2 launch amr_base nav2_launch.py
 ```
-
-> **หมายเหตุ:** ถ้าไม่ระบุ `map:=` จะเข้าโหมด SLAM อัตโนมัติ
 
 ### 1.2 เปิด RViz บน Dev Machine
 
 ```bash
-# Terminal 1: RViz + Teleop
 cd ~/for_my_first_AMR/ros2_ws
 source install/setup.bash
 ros2 launch amr_base dev_launch.py mode:=slam
@@ -79,19 +79,30 @@ ros2 launch amr_base dev_launch.py mode:=slam
 | `k` | หยุด |
 | `q`/`z` | เพิ่ม/ลดความเร็ว |
 
-**เคล็ดลับ:** ขับช้าๆ ให้ LiDAR scan ซ้อนทับกัน → แผนที่จะชัดขึ้น
+**เคล็ดลับ:**
+- ขับ **ช้าๆ** ให้ LiDAR scan ซ้อนทับกัน → แผนที่จะชัดขึ้น
+- เดินตามผนังห้องเป็นวง → ได้ loop closure จะแม่นยำมาก
+- ดู RViz: scan สีแดงต้อง **เกาะผนัง** map สีเทา
 
-### 1.4 บันทึกแผนที่
+### 1.4 บันทึกแผนที่ (ต้องทั้ง 2 แบบ)
 
 ```bash
 # Terminal ใหม่บน Pi5
-cd ~/maps
-ros2 run nav2_map_server map_saver_cli -f my_room
+
+# แบบ 1: Map ปกติ (สำหรับ costmap — .pgm/.yaml)
+mkdir -p ~/maps
+ros2 run nav2_map_server map_saver_cli -f ~/maps/my_room \
+  --ros-args -p map_subscribe_transient_local:=true
+
+# แบบ 2: Serialized Map (สำหรับ localization — .posegraph/.data)
+ros2 service call /slam_toolbox/serialize_map \
+  slam_toolbox/srv/SerializePoseGraph \
+  "{filename: '/home/khaitapad/maps/my_room_serialized'}"
 ```
 
-ได้ไฟล์ 2 ไฟล์:
-- `my_room.pgm` — ภาพแผนที่ (grayscale)
-- `my_room.yaml` — metadata (resolution, origin)
+ได้ไฟล์ 4 ไฟล์:
+- `my_room.pgm` + `my_room.yaml` — ภาพแผนที่สำหรับ costmap
+- `my_room_serialized.posegraph` + `my_room_serialized.data` — สำหรับ localization
 
 ---
 
@@ -100,8 +111,18 @@ ros2 run nav2_map_server map_saver_cli -f my_room
 ### 2.1 รัน Nav2 บน Pi5
 
 ```bash
-ros2 launch amr_base nav2_launch.py map:=/home/khaitapad/maps/my_room.yaml
+# หยุด SLAM ก่อน (Ctrl+C)
+# แล้วรัน Nav2 mode
+ros2 launch amr_base nav2_launch.py mode:=nav2
 ```
+
+> **หมายเหตุ:** Default map path = `~/maps/my_room.yaml` + `~/maps/my_room_serialized`
+> ถ้า save ไว้ที่อื่น ระบุเอง:
+> ```bash
+> ros2 launch amr_base nav2_launch.py mode:=nav2 \
+>   map:=/path/to/map.yaml \
+>   serialized_map:=/path/to/serialized_map
+> ```
 
 ### 2.2 เปิด RViz (Nav2 mode)
 
@@ -110,20 +131,10 @@ ros2 launch amr_base nav2_launch.py map:=/home/khaitapad/maps/my_room.yaml
 ros2 launch amr_base dev_launch.py mode:=nav2
 ```
 
-#### บังคับ AMCL ประมวลผลโดยไม่ต้องขยับ
-```bash
-ros2 service call /request_nomotion_update std_srvs/srv/Empty
-```
-
-### 2.3 ตั้งตำแหน่งเริ่มต้น
-
-> **หมายเหตุ:** AMCL ตั้ง initial pose ที่ origin อัตโนมัติแล้ว
-> ถ้าตำแหน่งไม่ตรง ให้กด **2D Pose Estimate** ใน RViz แล้วคลิกจุดที่หุ่นอยู่จริง
-
-### 2.4 ส่งเป้าหมาย (Goal)
+### 2.3 ส่งเป้าหมาย (Goal)
 
 **วิธีที่ 1 — RViz (GUI):**
-1. กด **2D Goal Pose** ใน toolbar
+1. กด **Nav2 Goal** หรือ **2D Goal Pose** ใน toolbar
 2. คลิกจุดบน map ที่ต้องการ → ลากลูกศรบอกทิศ → ปล่อย
 3. หุ่นจะวางแผนเส้นทาง (สีเขียว) แล้ววิ่งไปเอง
 
@@ -149,15 +160,16 @@ ros2 topic echo /cmd_vel
 # ต้องเห็นค่าเมื่อหุ่นเคลื่อนที่
 ```
 
-### ตรวจสอบ Localization
+### ตรวจสอบ Scan
 ```bash
-ros2 topic echo /amcl_pose --once
-# ต้องเห็น position ของหุ่น
+ros2 topic hz /scan_reliable
+# ต้องได้ ~10-12 Hz
 ```
 
 ### Clear Costmap (ถ้าติด)
 ```bash
-ros2 service call /clear_all_costmaps nav2_msgs/srv/ClearEntireCostmap '{}'
+ros2 service call /local_costmap/clear_entirely_local_costmap nav2_msgs/srv/ClearEntireCostmap '{}'
+ros2 service call /global_costmap/clear_entirely_global_costmap nav2_msgs/srv/ClearEntireCostmap '{}'
 ```
 
 ---
@@ -184,12 +196,11 @@ for_my_first_AMR/
 │       ├── slam.rviz         # SLAM visualization
 │       └── nav2.rviz         # Navigation visualization
 ├── maps/                     # Saved maps
-│   ├── my_room.pgm
-│   └── my_room.yaml
+│   ├── my_room.pgm / .yaml           # สำหรับ costmap
+│   └── my_room_serialized.posegraph   # สำหรับ localization
 └── docs/                     # Documentation
     ├── demo_guide.md          # ← คู่มือนี้
     ├── pi5_setup_guide.md     # การติดตั้ง Pi5
-    ├── ydlidar_x3pro_setup.md # การตั้งค่า LiDAR
     └── operation_guide.md     # คู่มือใช้งาน
 ```
 
@@ -200,7 +211,7 @@ for_my_first_AMR/
 | ส่วน | Algorithm | เหตุผล |
 |------|-----------|--------|
 | SLAM | **slam_toolbox** (Online Async) | เบา, เหมาะกับ Pi5, แม่นยำ |
-| Localization | **AMCL** (Adaptive MCL) | Particle filter มาตรฐาน, ใช้ LiDAR scan matching |
+| Localization | **slam_toolbox** (Scan Matching) | ใช้ LiDAR เป็นหลัก, แม่นกว่า AMCL สำหรับหุ่นเล็ก |
 | Path Planning | **NavfnPlanner** (Dijkstra) | วางแผนเส้นทาง global |
 | Path Following | **RegulatedPurePursuit** | วิ่งตามเส้นทาง smooth, ลด oscillation |
 | Motor Control | **PID** (on ESP32) | ควบคุมความเร็วล้อ, 20Hz loop |
@@ -210,27 +221,36 @@ for_my_first_AMR/
 ## 📹 การสาธิต (Demo Flow)
 
 ### สาธิต SLAM (3-5 นาที)
-1. เปิดหุ่น + RViz
-2. ขับสำรวจห้องด้วย teleop
+1. เปิดหุ่น + RViz (SLAM mode)
+2. ขับสำรวจห้องด้วย teleop → ดู map สร้างขึ้นมาเรื่อยๆ
 3. แสดงแผนที่ที่สร้างเสร็จใน RViz
-4. บันทึกแผนที่ด้วย `map_saver_cli`
+4. บันทึกแผนที่ด้วย `map_saver_cli` + `serialize_map`
 
 ### สาธิต Navigation (3-5 นาที)
-1. โหลดแผนที่ที่บันทึกไว้
+1. Switch เป็น Nav2 mode → โหลดแผนที่ที่บันทึกไว้
 2. แสดง costmap + robot pose ใน RViz
-3. กด 2D Goal Pose → หุ่นวางแผนและวิ่งไปเอง
+3. กด **Nav2 Goal** → หุ่นวางแผนและวิ่งไปเอง
 4. แสดง path planning (เส้นสีเขียว) + obstacle avoidance
 
+---
 
-### อัพเดทหุ่น:
+## 🔄 อัพเดทหุ่น
 
 ```bash
 # Pi5
 cd ~/amr && git pull
-# Dev
-cd ~/for_my_first_AMR && git pull
-
-# Build
 cd ros2_ws && colcon build --packages-select amr_base --symlink-install
+source install/setup.bash
 
+# Dev Machine
+cd ~/for_my_first_AMR && git pull
+cd ros2_ws && colcon build --packages-select amr_base --symlink-install
+source install/setup.bash
+```
+
+## 🔌 Upload Firmware (ถ้ามีแก้ ESP32)
+
+```bash
+cd ~/for_my_first_AMR/esp32_firmware
+pio run --target upload
 ```
