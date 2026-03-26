@@ -69,8 +69,8 @@ float PID_KI =  50.0f;  // ปรับขึ้นจาก 15 → 50
 float PID_KD =   2.0f;
 
 #define PID_LOOP_MS     50     // 20 Hz control loop
-#define MAX_PWM         230    // เผื่อ headroom (max 255)
-#define MIN_START_PWM   45     // ลดจาก 65→45 เพื่อให้หมุนช้าได้ (ω=1.0 rad/s)
+#define MAX_PWM         250    // เต็มพิกัด
+#define MIN_START_PWM   80     // เพิ่มจาก 45→80 ให้ชนะ friction ล้อ
 #define CMD_TIMEOUT_MS  500    // หยุดถ้าไม่ได้รับคำสั่งนาน 500ms
 
 // === ทิศทางหุ่น ===

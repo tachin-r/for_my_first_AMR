@@ -110,6 +110,11 @@ ros2 launch amr_base nav2_launch.py map:=/home/khaitapad/maps/my_room.yaml
 ros2 launch amr_base dev_launch.py mode:=nav2
 ```
 
+#### บังคับ AMCL ประมวลผลโดยไม่ต้องขยับ
+```bash
+ros2 service call /request_nomotion_update std_srvs/srv/Empty
+```
+
 ### 2.3 ตั้งตำแหน่งเริ่มต้น
 
 > **หมายเหตุ:** AMCL ตั้ง initial pose ที่ origin อัตโนมัติแล้ว
@@ -228,4 +233,4 @@ cd ~/for_my_first_AMR && git pull
 # Build
 cd ros2_ws && colcon build --packages-select amr_base --symlink-install
 
-  
+```
