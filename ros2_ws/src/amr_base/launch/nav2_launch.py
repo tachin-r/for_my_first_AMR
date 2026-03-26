@@ -158,7 +158,7 @@ def generate_launch_description():
         parameters=[{
             'use_sim_time': False,
             'autostart': True,
-            'bond_timeout': 10.0,
+            'bond_timeout': 0.0,  # slam_toolbox ไม่ support bond — ปิดเลย
             'node_names': ['slam_toolbox'],
         }],
         condition=IfCondition(is_slam),
@@ -244,7 +244,7 @@ def generate_launch_description():
         parameters=[{
             'use_sim_time': False,
             'autostart': True,
-            'bond_timeout': 10.0,
+            'bond_timeout': 0.0,
             'node_names': [
                 'map_server',
                 'slam_toolbox',
