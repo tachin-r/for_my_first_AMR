@@ -68,7 +68,7 @@
   <joint name="left_wheel_joint" type="continuous">
     <parent link="base_link"/>
     <child link="left_wheel"/>
-    <origin xyz="0.02 0.1 0" rpy="0 0 0"/>  <!-- ล้อขับอยู่หน้า base_link origin -->
+    <origin xyz="-0.02 0.1 0" rpy="0 0 0"/>  <!-- ล้อขับอยู่หลัง (-x) ตาม CAD -->
     <axis xyz="0 1 0"/>
   </joint>
 
@@ -95,7 +95,7 @@
   <joint name="right_wheel_joint" type="continuous">
     <parent link="base_link"/>
     <child link="right_wheel"/>
-    <origin xyz="0.02 -0.1 0" rpy="0 0 0"/>
+    <origin xyz="-0.02 -0.1 0" rpy="0 0 0"/>  <!-- ล้อขับอยู่หลัง -->
     <axis xyz="0 1 0"/>
   </joint>
 
@@ -122,7 +122,7 @@
   <joint name="caster_joint" type="fixed">
     <parent link="base_link"/>
     <child link="caster_wheel"/>
-    <origin xyz="-0.135 0 -0.0175" rpy="0 0 0"/>  <!-- caster ด้านหลัง -->
+    <origin xyz="0.135 0 -0.0175" rpy="0 0 0"/>  <!-- caster อยู่หน้า (+x) ตาม CAD -->
   </joint>
 
   <gazebo reference="caster_wheel">
